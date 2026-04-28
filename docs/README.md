@@ -12,7 +12,7 @@ An interactive skipper decision-support tool for real-time sailing decisions in 
 |------|------|
 | `index.html` | **Source.** Runtime app that fetches `data/locations.json` over HTTP. Edit this. |
 | `data/locations.json` | **Source of truth** for all 30 locations + data `version` / `lastUpdated`. Edit this. |
-| `dist/index.html` | **Generated.** Self-contained build for GitHub Pages — locations + meta embedded. Do not edit. |
+| `docs/index.html` | **Generated.** Self-contained build for GitHub Pages — locations + meta embedded. Do not edit. |
 | `aeolian-skipper-tool.html` | **Generated.** Identical content, kept at the repo root as a single-file copy you can email / Dropbox to crew. Do not edit. |
 
 The header shows the current `App vX.Y` and the data file's `lastUpdated` so crew can confirm which version they are looking at.
@@ -73,7 +73,7 @@ bash serve.sh
 
 That serves the source app exactly as it will behave when developing.
 
-If you only want to view the deploy output, open `dist/index.html` (or `aeolian-skipper-tool.html`) directly in a browser — those have the data embedded, so no server is needed.
+If you only want to view the deploy output, open `docs/index.html` (or `aeolian-skipper-tool.html`) directly in a browser — those have the data embedded, so no server is needed.
 
 ## How to Rebuild
 
@@ -85,29 +85,27 @@ bash build.sh
 
 This reads `index.html` + `data/locations.json` and writes:
 
-- `dist/index.html` — the GitHub Pages deploy target
+- `docs/index.html` — the GitHub Pages deploy target
 - `aeolian-skipper-tool.html` — identical single-file copy for emailing / Dropbox
 
 Both files contain `EMBEDDED_LOCATIONS` and `EMBEDDED_DATA_META`. The script runs sanity checks and exits non-zero if anything looks wrong.
 
-**Always run `bash build.sh` after editing `index.html` or `data/locations.json`. Never hand-edit `dist/index.html` or `aeolian-skipper-tool.html` — your changes will be overwritten.**
+**Always run `bash build.sh` after editing `index.html` or `data/locations.json`. Never hand-edit `docs/index.html` or `aeolian-skipper-tool.html` — your changes will be overwritten.**
 
 ## Deploying to GitHub Pages
 
-The `dist/` folder is the deploy target. Two common setups:
+The `docs/` folder is the deploy target. GitHub Pages only allows publishing from `/` or `/docs` on a branch, which is why the build output lives in `docs/`.
 
-**Option A — `dist/` on `main`:**
+**Setup (one time):**
 
 1. Push the repo to GitHub.
 2. Repo Settings → Pages → Build and deployment → Source: *Deploy from a branch*.
-3. Branch: `main`, Folder: `/dist`. Save.
-4. Wait for the Pages build; Pages will serve `dist/index.html` as the site root.
+3. Branch: `main`, Folder: `/docs`. Save.
+4. Wait for the Pages build; Pages will serve `docs/index.html` as the site root.
 
-**Option B — `gh-pages` branch:**
+`docs/README.md` lives in the same folder but is ignored by Pages (Pages always serves `index.html` as the landing page).
 
-If you prefer keeping `main` clean of generated output, push only the contents of `dist/` to a `gh-pages` branch and point Pages at `gh-pages` / `/ (root)`.
-
-After every change to `index.html` or `data/locations.json`, re-run `bash build.sh` and commit the regenerated `dist/index.html` so Pages picks it up.
+After every change to `index.html` or `data/locations.json`, re-run `bash build.sh` and commit the regenerated `docs/index.html` so Pages picks it up.
 
 > Reminder: Pages serves over HTTPS, but the app calls Open-Meteo and CartoDB / OpenSeaMap directly — those are HTTPS already, so there is no mixed-content issue. Without internet, the page will load the UI but show no forecast and no map tiles.
 
@@ -164,17 +162,16 @@ Each location in `data/locations.json` includes:
 ```
 Sailing Sicily/
   index.html                   — Source app (loads from JSON, needs HTTP server)
-  build.sh                     — Regenerates dist/ + legacy file from sources
+  build.sh                     — Regenerates docs/ + legacy file from sources
   serve.sh                     — Helper: python3 -m http.server 8080
-  .gitignore                   — Keeps dist/ tracked, ignores .DS_Store etc.
-  dist/
+  .gitignore                   — Keeps docs/ tracked, ignores .DS_Store, raw notes
+  docs/
     index.html                 — GENERATED — deploy target for GitHub Pages
+    README.md                  — This file
   aeolian-skipper-tool.html    — GENERATED — single-file copy for sharing
   data/
     locations.json             — Source of truth: 30 locations + version + lastUpdated
-    raw-research-notes.json    — Research sources and raw notes (not embedded)
-  docs/
-    README.md                  — This file
+    raw-research-notes.json    — Research sources and raw notes (gitignored, local-only)
 ```
 
 ## Research Sources

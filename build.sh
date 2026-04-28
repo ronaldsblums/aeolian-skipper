@@ -7,7 +7,7 @@
 #   data/locations.json         — locations + version + lastUpdated
 #
 # Generated outputs (do not edit by hand):
-#   dist/index.html             — deploy target for GitHub Pages (self-contained)
+#   docs/index.html             — deploy target for GitHub Pages (self-contained)
 #   aeolian-skipper-tool.html   — legacy local-share backup, identical content
 
 set -euo pipefail
@@ -15,7 +15,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INDEX="$SCRIPT_DIR/index.html"
 LOCATIONS="$SCRIPT_DIR/data/locations.json"
-DIST_DIR="$SCRIPT_DIR/dist"
+DIST_DIR="$SCRIPT_DIR/docs"
 DIST_OUT="$DIST_DIR/index.html"
 LEGACY_OUT="$SCRIPT_DIR/aeolian-skipper-tool.html"
 

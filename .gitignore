@@ -16,5 +16,5 @@ data/raw-research-notes.json
 # uncomment if you would prefer to keep it out of the repo)
 # aeolian-skipper-tool.html
 
-# Note: dist/ is intentionally tracked — it is the GitHub Pages deploy target.
-# Do NOT add `dist/` here.
+# Note: docs/ is intentionally tracked — it is the GitHub Pages deploy target.
+# Do NOT add `docs/` here.
