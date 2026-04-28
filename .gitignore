@@ -1,0 +1,20 @@
+# macOS / editor cruft
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
+
+# Local server logs / temp
+*.log
+.tmp/
+
+# Research notes — kept local, not for the public repo
+data/raw-research-notes.json
+
+# Legacy local share build (still produced by build.sh as a side artifact;
+# uncomment if you would prefer to keep it out of the repo)
+# aeolian-skipper-tool.html
+
+# Note: dist/ is intentionally tracked — it is the GitHub Pages deploy target.
+# Do NOT add `dist/` here.
