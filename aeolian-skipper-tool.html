@@ -478,7 +478,11 @@ function readInitialRouteState(){
     const fromStore=loadRouteFromStorage();
     if(fromStore)result=fromStore;
   }
-  if(!result)result={routes:{A:Array(6).fill(null),B:Array(6).fill(null)},activePlan:'A'};
+  if(!result){
+    // Default fresh trip: Day 6 (Friday) returns to home port.
+    const blank=()=>{const a=Array(6).fill(null);a[5]='capo_orlando_marina';return a;};
+    result={routes:{A:blank(),B:blank()},activePlan:'A'};
+  }
   _initialRouteCache=result;
   return result;
 }
@@ -670,7 +674,7 @@ function RoutePlanner({locs,forecasts,getWx,routes,setRoutes,plan,setPlan}){
       </div>
       <select value={cur[day]||''} onChange={e=>setStop(day,e.target.value)}>
         <option value="">— Select stop —</option>
-        {locs.filter(l=>l.id!=='capo_orlando_marina').map(l=><option key={l.id} value={l.id}>{l.name} ({l.island}){l.overnightRecommended?' ☾':' ⚠ not overnight'}</option>)}
+        {locs.map(l=><option key={l.id} value={l.id}>{l.id==='capo_orlando_marina'?'⚓ ':''}{l.name} ({l.island}){l.overnightRecommended?' ☾':' ⚠ not overnight'}</option>)}
       </select>
       {loc&&<div className="leg-info">
         <div className="leg-row"><span className="leg-l">Distance</span><span className="leg-v">{fmtNm(nm)} nm</span></div>
