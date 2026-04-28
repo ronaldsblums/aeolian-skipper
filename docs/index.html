@@ -615,12 +615,19 @@ function RoutePlanner({locs,forecasts,getWx,routes,setRoutes,plan,setPlan}){
 
   const [copyMsg,setCopyMsg]=useState('');
   const copyShareLink=()=>{
-    const url=window.location.href;
-    const fallback=()=>{const ta=document.createElement('textarea');ta.value=url;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');setCopyMsg('Link copied');}catch(e){setCopyMsg('Copy failed — select & copy from URL bar');}document.body.removeChild(ta);};
+    // Build the URL directly from current React state — never rely on window.location.href,
+    // which may not yet reflect the hash if the route was just restored from localStorage.
+    const hash=encodeRouteHash(routes,plan);
+    const url=`${window.location.origin}${window.location.pathname}${hash?'#'+hash:''}`;
+    // Mirror the hash into the address bar so what the user sees matches what was copied.
+    if(hash&&window.location.hash!=='#'+hash){
+      try{history.replaceState(null,'','#'+hash);}catch(e){/* noop */}
+    }
+    const fallback=()=>{const ta=document.createElement('textarea');ta.value=url;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');setCopyMsg(hash?'Link copied':'No stops yet — link copied without route');}catch(e){setCopyMsg('Copy failed — select from URL bar');}document.body.removeChild(ta);};
     if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(url).then(()=>setCopyMsg('Link copied'),fallback);
+      navigator.clipboard.writeText(url).then(()=>setCopyMsg(hash?'Link copied':'No stops yet — link copied without route'),fallback);
     }else fallback();
-    setTimeout(()=>setCopyMsg(''),2500);
+    setTimeout(()=>setCopyMsg(''),3000);
   };
   const clearAllStops=()=>{
     setRoutes(p=>({...p,[plan]:Array(6).fill(null)}));
@@ -974,15 +981,20 @@ function App(){
   const [routes,setRoutes]=useState(initialRoute.routes);
   const [activePlan,setActivePlan]=useState(initialRoute.activePlan);
 
-  // Persist route state: URL hash (shareable) + localStorage (per-browser fallback)
+  // Persist route state: URL hash (shareable) + localStorage (per-browser fallback).
+  // Runs on every routes/activePlan change AND on initial mount, so a route restored
+  // from localStorage immediately gets mirrored into the URL hash.
   useEffect(()=>{
     const hash=encodeRouteHash(routes,activePlan);
-    const target=hash?'#'+hash:window.location.pathname+window.location.search;
-    if(hash){
-      if(window.location.hash!=='#'+hash)history.replaceState(null,'',target);
-    }else if(window.location.hash){
-      history.replaceState(null,'',window.location.pathname+window.location.search);
-    }
+    try{
+      if(hash){
+        if(window.location.hash!=='#'+hash){
+          history.replaceState(null,'',window.location.pathname+window.location.search+'#'+hash);
+        }
+      }else if(window.location.hash){
+        history.replaceState(null,'',window.location.pathname+window.location.search);
+      }
+    }catch(e){/* file:// or sandboxed — skip URL update, localStorage still works */}
     saveRouteToStorage(routes,activePlan);
   },[routes,activePlan]);
 
