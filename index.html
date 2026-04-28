@@ -665,14 +665,27 @@ function RoutePlanner({locs,forecasts,getWx,routes,setRoutes,plan,setPlan}){
       {copyMsg&&<span style={{marginLeft:'.5rem',fontSize:'.78rem',color:'#86efac'}}>{copyMsg}</span>}
     </div>
     <div style={{fontSize:'.85rem',color:'#94a3b8',marginBottom:'1rem'}}>
-      <b style={{color:'#e2e8f0'}}>Start / Return:</b> Capo d'Orlando Marina <span style={{color:'#64748b',fontSize:'.8rem'}}>(Sun departure → Fri return, Sat check-in)</span>
+      <b style={{color:'#e2e8f0'}}>Home port:</b> Capo d'Orlando Marina <span style={{color:'#64748b',fontSize:'.8rem'}}>(Sun departure → Fri return, Sat check-in — Day 6 doubles as the return leg)</span>
     </div>
     <div style={{fontSize:'.78rem',color:'#94a3b8',marginBottom:'1rem',padding:'.5rem .65rem',border:'1px solid #334155',borderRadius:'.4rem',background:'#0f172a'}}>
       <b style={{color:'#cbd5e1'}}>Forecast horizon per day:</b> Day 1 uses the current forecast; Day 2 uses +24h; Day 3+ uses +48h. Open-Meteo data extends to ~3 days, so suitability for Days 4–6 is based on the +48h bucket and should be re-checked closer to the date.
     </div>
-    {legs.legs.map(({day,loc,nm,suit,horizon,warnings,eta55,eta65})=><div key={day} className="day">
+    {legs.legs.map(({day,loc,nm,suit,horizon,warnings,eta55,eta65})=>{
+      const isReturnDay=day===5&&cur[day]==='capo_orlando_marina';
+      const dayLabel=['Sun','Mon','Tue','Wed','Thu','Fri'][day];
+      // Sort: home port first (handy default for Day 6), then everything else alphabetically by island then name.
+      const sortedLocs=[...locs].sort((a,b)=>{
+        if(a.id==='capo_orlando_marina')return -1;
+        if(b.id==='capo_orlando_marina')return 1;
+        return (a.island+a.name).localeCompare(b.island+b.name);
+      });
+      return <div key={day} className="day" style={isReturnDay?{borderColor:'#475569',background:'#0b1220'}:{}}>
       <div className="day-hdr">
-        <span className="day-num">Day {day+1} <span style={{color:'#94a3b8',fontWeight:400,fontSize:'.8rem'}}>{['Sun','Mon','Tue','Wed','Thu','Fri'][day]}</span></span>
+        <span className="day-num">
+          {isReturnDay
+            ?<span>Day {day+1} — <span style={{color:'#38bdf8'}}>Return / Home port</span> <span style={{color:'#94a3b8',fontWeight:400,fontSize:'.8rem'}}>{dayLabel}</span></span>
+            :<span>Day {day+1} <span style={{color:'#94a3b8',fontWeight:400,fontSize:'.8rem'}}>{dayLabel}</span></span>}
+        </span>
         {cur[day]&&<div style={{display:'flex',gap:'.3rem'}}>
           <button className="btn-s" onClick={()=>moveStop(day,-1)}>↑</button>
           <button className="btn-s" onClick={()=>moveStop(day,1)}>↓</button>
@@ -681,7 +694,7 @@ function RoutePlanner({locs,forecasts,getWx,routes,setRoutes,plan,setPlan}){
       </div>
       <select value={cur[day]||''} onChange={e=>setStop(day,e.target.value)}>
         <option value="">— Select stop —</option>
-        {locs.map(l=><option key={l.id} value={l.id}>{l.id==='capo_orlando_marina'?'⚓ ':''}{l.name} ({l.island}){l.overnightRecommended?' ☾':' ⚠ not overnight'}</option>)}
+        {sortedLocs.map(l=><option key={l.id} value={l.id}>{l.id==='capo_orlando_marina'?'⚓ ':''}{l.name} ({l.island}){l.overnightRecommended?' ☾':' ⚠ not overnight'}</option>)}
       </select>
       {loc&&<div className="leg-info">
         <div className="leg-row"><span className="leg-l">Distance</span><span className="leg-v">{fmtNm(nm)} nm</span></div>
@@ -692,7 +705,7 @@ function RoutePlanner({locs,forecasts,getWx,routes,setRoutes,plan,setPlan}){
         <div className="leg-row"><span className="leg-l">Depth</span><span className="leg-v" style={loc.depth.min<MIN_SAFE_DEPTH?{color:loc.depth.min<BOAT_DRAFT?'#ef4444':'#eab308'}:{}}>{loc.depth.min}-{loc.depth.max}m{loc.depth.min<MIN_SAFE_DEPTH?` (${(loc.depth.min-BOAT_DRAFT).toFixed(1)}m clearance)`:''}</span></div>
       </div>}
       {warnings.length>0&&<div className="warn">{warnings.map((w,i)=><div key={i}>⚠ {w}</div>)}</div>}
-    </div>)}
+    </div>;})}
     {legs.returnNm>0&&<div className="day" style={{borderColor:'#475569'}}>
       <div className="day-hdr"><span className="day-num" style={{color:'#94a3b8'}}>Return to Capo d'Orlando</span></div>
       <div className="leg-info">
