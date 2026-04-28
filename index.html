@@ -463,12 +463,24 @@ function saveRouteToStorage(routes,activePlan){
     localStorage.setItem(ROUTE_STORAGE_KEY,JSON.stringify({routes,activePlan}));
   }catch(e){/* private mode / quota — silent */}
 }
-function getInitialRouteState(){
-  const fromHash=decodeRouteHash(typeof window!=='undefined'?window.location.hash:'');
-  if(fromHash)return fromHash;
-  const fromStore=loadRouteFromStorage();
-  if(fromStore)return fromStore;
-  return {routes:{A:Array(6).fill(null),B:Array(6).fill(null)},activePlan:'A'};
+// Read once, cache the result. Hash takes priority over localStorage; defaults blank.
+// Cached so the first React render and any re-runs of useState lazy initializers
+// see the same hydrated value, even if the URL hash is later rewritten by the app.
+let _initialRouteCache=null;
+function readInitialRouteState(){
+  if(_initialRouteCache)return _initialRouteCache;
+  let result=null;
+  try{
+    const fromHash=decodeRouteHash(typeof window!=='undefined'?window.location.hash:'');
+    if(fromHash)result=fromHash;
+  }catch(e){/* malformed hash — fall through */}
+  if(!result){
+    const fromStore=loadRouteFromStorage();
+    if(fromStore)result=fromStore;
+  }
+  if(!result)result={routes:{A:Array(6).fill(null),B:Array(6).fill(null)},activePlan:'A'};
+  _initialRouteCache=result;
+  return result;
 }
 
 async function loadLocations(){
@@ -984,14 +996,29 @@ function App(){
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState(null);
   const [tab,setTab]=useState('dashboard');
-  const initialRoute=useMemo(()=>getInitialRouteState(),[]);
-  const [routes,setRoutes]=useState(initialRoute.routes);
-  const [activePlan,setActivePlan]=useState(initialRoute.activePlan);
+  // Lazy initializers — run synchronously on first render only, before any effect.
+  // Both calls hit the same cached result, so they cannot disagree.
+  const [routes,setRoutes]=useState(()=>readInitialRouteState().routes);
+  const [activePlan,setActivePlan]=useState(()=>readInitialRouteState().activePlan);
+  // Hydration guard: skip the persistence effect's first run so an empty default
+  // can never overwrite a valid hash / localStorage entry. Set true once mounted.
+  const hydratedRef=useRef(false);
 
-  // Persist route state: URL hash (shareable) + localStorage (per-browser fallback).
-  // Runs on every routes/activePlan change AND on initial mount, so a route restored
-  // from localStorage immediately gets mirrored into the URL hash.
+  // On mount, mirror the hydrated state back into the URL hash so a route restored
+  // from localStorage shows up in the address bar (Copy route link will then work
+  // off the URL too). This runs once and does not touch state.
   useEffect(()=>{
+    const init=readInitialRouteState();
+    const hash=encodeRouteHash(init.routes,init.activePlan);
+    if(hash&&window.location.hash!=='#'+hash){
+      try{history.replaceState(null,'',window.location.pathname+window.location.search+'#'+hash);}catch(e){}
+    }
+  },[]);
+
+  // Persist route state on every change AFTER initial hydration.
+  // First effect run is skipped — it only flips the hydrated flag.
+  useEffect(()=>{
+    if(!hydratedRef.current){hydratedRef.current=true;return;}
     const hash=encodeRouteHash(routes,activePlan);
     try{
       if(hash){
